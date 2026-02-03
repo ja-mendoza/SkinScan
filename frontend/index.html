@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkinScan AI - Skin Cancer Detection Tool</title>
+    <link rel="stylesheet" href="main.css">
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-thin-rounded/css/uicons-thin-rounded.css'>
+    
+    
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo-icon">
+                    <i class="fi fi-tr-heart-rate"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>SkinScan AI</h1>
+                    <!-- <p>Early Detection, Better Protection</p> -->
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container">
+        <div class="page-header">
+            <h2>Skin Cancer Detection Tool</h2>
+            <p>Upload a photo of a skin lesion or mole for AI-powered analysis. Our system evaluates potential risk factors and provides recommendations.</p>
+        </div>
+
+        <div class="tabs">
+            <!-- Tab List -->
+            <div class="tab-list">
+                <button class="tab-button active" data-tab="scan">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    Scan
+                </button>
+                <button class="tab-button" data-tab="info">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Information
+                </button>
+            </div>
+
+            <!-- Scan Tab Content -->
+            <div class="tab-content active" id="scan-tab">
+                <!-- Upload Section -->
+                <div class="card upload-card">
+                    <div class="upload-content">
+                        <div class="upload-icon-wrapper">
+                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                        </div>
+                        <div class="upload-text">
+                            <h3>Upload Skin Image</h3>
+                            <p>Upload a clear photo of the skin area you want to analyze</p>
+                        </div>
+                        <label for="file-upload">
+                            <button class="upload-button" id="upload-btn">
+                                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                </svg>
+                                <span id="upload-btn-text">Choose File</span>
+                            </button>
+                        </label>
+                        <input type="file" id="file-upload" accept="image/*" style="display: none;">
+                        <p class="upload-info">Supported formats: JPG, PNG, HEIC • Max size: 10MB</p>
+                    </div>
+                </div>
+
+                <!-- Example Buttons -->
+                <div class="example-section" id="example-section">
+                    <p>Or try these example scans:</p>
+                    <div class="example-buttons">
+                        <button class="example-button low" onclick="loadExample(0)">Low Risk Example</button>
+                        <button class="example-button medium" onclick="loadExample(1)">Medium Risk Example</button>
+                        <button class="example-button high" onclick="loadExample(2)">High Risk Example</button>
+                    </div>
+                </div>
+
+                <!-- Loading Spinner -->
+                <div id="loading-spinner" class="hidden">
+                    <div class="spinner"></div>
+                </div>
+
+                <!-- Results Section -->
+                <div id="results-section" class="hidden">
+                    <!-- Results will be inserted here by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Info Tab Content -->
+            <div class="tab-content" id="info-tab">
+                <div class="space-y-6">
+                    <!-- ABCDE Rule Card -->
+                    <div class="card">
+                        <h3>Understanding the ABCDE Rule</h3>
+                        <p style="font-size: 0.875rem; color: #6b7280; margin-bottom: 1rem;">Use these warning signs to identify potentially dangerous moles:</p>
+                        <div class="abcde-list">
+                            <div class="abcde-item">
+                                <div class="abcde-letter">A</div>
+                                <div class="abcde-content">
+                                    <div class="title">Asymmetry</div>
+                                    <p class="description">One half of the mole doesn't match the other half</p>
+                                </div>
+                            </div>
+                            <div class="abcde-item">
+                                <div class="abcde-letter">B</div>
+                                <div class="abcde-content">
+                                    <div class="title">Border</div>
+                                    <p class="description">Edges are irregular, ragged, notched, or blurred</p>
+                                </div>
+                            </div>
+                            <div class="abcde-item">
+                                <div class="abcde-letter">C</div>
+                                <div class="abcde-content">
+                                    <div class="title">Color</div>
+                                    <p class="description">Color is not uniform and may include shades of brown, black, pink, red, white, or blue</p>
+                                </div>
+                            </div>
+                            <div class="abcde-item">
+                                <div class="abcde-letter">D</div>
+                                <div class="abcde-content">
+                                    <div class="title">Diameter</div>
+                                    <p class="description">Spot is larger than 6mm across (about ¼ inch – the size of a pencil eraser)</p>
+                                </div>
+                            </div>
+                            <div class="abcde-item">
+                                <div class="abcde-letter">E</div>
+                                <div class="abcde-content">
+                                    <div class="title">Evolving</div>
+                                    <p class="description">Mole is changing in size, shape, or color</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Prevention Tips Card -->
+                    <div class="card">
+                        <h3>Prevention Tips</h3>
+                        <div class="prevention-grid">
+                            <div class="prevention-item">
+                                <div class="prevention-icon">
+                                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                                    </svg>
+                                </div>
+                                <div class="prevention-content">
+                                    <div class="title">Sun Protection</div>
+                                    <p class="tip">Use broad-spectrum sunscreen with SPF 30+ daily</p>
+                                </div>
+                            </div>
+                            <div class="prevention-item">
+                                <div class="prevention-icon">
+                                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                    </svg>
+                                </div>
+                                <div class="prevention-content">
+                                    <div class="title">Protective Clothing</div>
+                                    <p class="tip">Wear hats, sunglasses, and long-sleeved clothing</p>
+                                </div>
+                            </div>
+                            <div class="prevention-item">
+                                <div class="prevention-icon">
+                                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                </div>
+                                <div class="prevention-content">
+                                    <div class="title">Regular Checks</div>
+                                    <p class="tip">Perform monthly self-exams and annual dermatologist visits</p>
+                                </div>
+                            </div>
+                            <div class="prevention-item">
+                                <div class="prevention-icon">
+                                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                </div>
+                                <div class="prevention-content">
+                                    <div class="title">Avoid Peak Hours</div>
+                                    <p class="tip">Stay in shade during 10am-4pm when UV rays are strongest</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- FAQ Card -->
+                    <div class="card">
+                        <h3>Frequently Asked Questions</h3>
+                        <div class="accordion">
+                            <div class="accordion-item">
+                                <button class="accordion-button">
+                                    <span>How accurate is this detection tool?</span>
+                                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+                                <div class="accordion-content">
+                                    <div class="accordion-content-inner">
+                                        This is a demonstration tool using simulated analysis. Real skin cancer detection requires advanced AI models trained on medical datasets. Always consult a healthcare professional for accurate diagnosis.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item">
+                                <button class="accordion-button">
+                                    <span>When should I see a dermatologist?</span>
+                                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+                                <div class="accordion-content">
+                                    <div class="accordion-content-inner">
+                                        See a dermatologist immediately if you notice any new, changing, or unusual spots on your skin, especially if they exhibit any of the ABCDE warning signs. Early detection is crucial for successful treatment.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item">
+                                <button class="accordion-button">
+                                    <span>What types of skin cancer exist?</span>
+                                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+                                <div class="accordion-content">
+                                    <div class="accordion-content-inner">
+                                        The most common types are Basal Cell Carcinoma (BCC), Squamous Cell Carcinoma (SCC), and Melanoma. Melanoma is the most dangerous but highly treatable when caught early. Regular screenings are essential for early detection.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <p><strong>Medical Disclaimer:</strong> This tool is for educational and informational purposes only.</p>
+                <p>It does not provide medical advice, diagnosis, or treatment. Always seek the advice of a qualified healthcare provider with any questions regarding a medical condition.</p>
+            </div>
+        </div>
+    </footer>
+    <script src="script.js"></script>
+</body>
+</html>
+
