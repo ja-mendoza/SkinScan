@@ -1,9 +1,3 @@
-// SkinScan AI frontend logic
-// Requires these IDs in index.html:
-// file-upload, upload-btn, upload-btn-text, example-section, loading-spinner, results-section
-// Tabs: .tab-button (data-tab="scan"/"info"), #scan-tab, #info-tab
-// Accordion: .accordion-button, next sibling is .accordion-content
-
 const API_URL = "http://127.0.0.1:8000/predict"
 
 const fileInput = document.getElementById("file-upload")
@@ -27,15 +21,18 @@ function wireUpload() {
 
     uploadBtn.addEventListener("click", (e) => {
         e.preventDefault()
-        if (!uploadBtn.disabled) fileInput.click()
+        if (uploadBtn.disabled) return
+        fileInput.click()
     })
 
     fileInput.addEventListener("change", (e) => {
         const file = e.target.files && e.target.files[0]
         if (!file) return
 
-        const ok = validateFile(file)
-        if (!ok) return
+        if (!validateFile(file)) {
+            fileInput.value = ""
+            return
+        }
 
         analyzeFile(file)
     })
@@ -46,14 +43,12 @@ function validateFile(file) {
     const isImage = file.type && file.type.startsWith("image/")
 
     if (!isImage) {
-        alert("Please upload an image file.")
-        fileInput.value = ""
+        alert("Upload an image file.")
         return false
     }
 
     if (file.size > maxBytes) {
-        alert("File too large. Max size is 10MB.")
-        fileInput.value = ""
+        alert("File too large. Max is 10MB.")
         return false
     }
 
@@ -116,7 +111,9 @@ function renderResults(file, data) {
 
     const score = clamp01(Number(data.probability_malignant))
     const conf = clamp01(Number(data.confidence))
-    const isMal = String(data.label).toLowerCase() === "malignant"
+    const labelRaw = String(data.prediction || "").toLowerCase()
+    const riskLevel = String(data.risk_level || "")
+    const isMal = labelRaw === "malignant"
 
     const labelText = isMal ? "Malignant" : "Benign"
     const badgeClass = isMal ? "high" : "low"
@@ -135,15 +132,13 @@ function renderResults(file, data) {
                 </div>
 
                 <div class="results-details">
-                    <div>
-                        <div class="risk-header">
-                            <span>Prediction</span>
-                            <span class="badge ${badgeClass}">${labelText}</span>
-                        </div>
+                    <div class="risk-header">
+                        <span>Prediction</span>
+                        <span class="badge ${badgeClass}">${labelText}</span>
+                    </div>
 
-                        <div class="risk-box ${badgeClass}">
-                            <span>Model output based on the uploaded image</span>
-                        </div>
+                    <div style="margin-top:8px;font-weight:600">
+                        Risk Level: ${escapeHtml(riskLevel)}
                     </div>
 
                     <div class="confidence-bar">
@@ -152,7 +147,7 @@ function renderResults(file, data) {
                             <span>${probPct}%</span>
                         </div>
                         <div class="progress-bar">
-                            <div class="progress-fill" style="width:${probPct}%;"></div>
+                            <div class="progress-fill" style="width:${probPct}%"></div>
                         </div>
                     </div>
 
@@ -162,15 +157,17 @@ function renderResults(file, data) {
                             <span>${confPct}%</span>
                         </div>
                         <div class="progress-bar">
-                            <div class="progress-fill" style="width:${confPct}%;"></div>
+                            <div class="progress-fill" style="width:${confPct}%"></div>
                         </div>
                     </div>
 
-                    <div class="alert warning" style="margin-top:16px;">
-                        <div class="alert-content">
-                            <h4>Reminder</h4>
-                            <p>This is a screening tool. For diagnosis and treatment, consult a dermatologist.</p>
-                        </div>
+                    <div class="card" style="margin-top:16px">
+                        <p style="color:#6b7280;font-size:0.875rem;margin:0">
+                            Model: ${escapeHtml(String(data.model || ""))}
+                        </p>
+                        <p style="color:#9ca3af;font-size:0.75rem;margin-top:6px">
+                            ${escapeHtml(String(data.disclaimer || ""))}
+                        </p>
                     </div>
                 </div>
             </div>
@@ -189,8 +186,8 @@ function renderError(title, data) {
     resultsSection.innerHTML = `
         <div class="card">
             <h3>${escapeHtml(title)}</h3>
-            <p style="color:#b91c1c; margin-top:8px;">${msg}</p>
-            ${trace ? `<details style="margin-top:12px;"><summary>Details</summary><pre style="white-space:pre-wrap;">${trace}</pre></details>` : ""}
+            <p style="color:#b91c1c;margin-top:8px">${msg}</p>
+            ${trace ? `<details style="margin-top:12px"><summary>Details</summary><pre style="white-space:pre-wrap">${trace}</pre></details>` : ""}
         </div>
     `
     resultsSection.classList.remove("hidden")
