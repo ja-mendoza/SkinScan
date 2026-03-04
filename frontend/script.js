@@ -132,14 +132,21 @@ function renderResults(file, data) {
                 </div>
 
                 <div class="results-details">
-                    <div class="risk-header">
-                        <span>Prediction</span>
-                        <span class="badge ${badgeClass}">${labelText}</span>
-                    </div>
+                     <div class="risk-header">
+                    <span class="badge ${badgeClass}">${labelText}</span>
+                </div>
 
-                    <div style="margin-top:8px;font-weight:600">
-                        Risk Level: ${escapeHtml(riskLevel)}
-                    </div>
+                <div style="margin-top:6px;font-size:14px;color:#555">
+                    ${
+                        isMal
+                        ? "A malignant tumor is cancerous and can grow aggressively and spread to other parts of the body."
+                        : "A benign tumor is a growth that is not cancerous and does not spread to other parts of the body."
+                    }
+                </div>
+
+                <div style="margin-top:8px;font-weight:600">
+                    Risk Level: ${escapeHtml(riskLevel)}
+                </div>
 
                     <div class="confidence-bar">
                         <div class="confidence-header">
@@ -161,14 +168,6 @@ function renderResults(file, data) {
                         </div>
                     </div>
 
-                    <div class="card" style="margin-top:16px">
-                        <p style="color:#6b7280;font-size:0.875rem;margin:0">
-                            Model: ${escapeHtml(String(data.model || ""))}
-                        </p>
-                        <p style="color:#9ca3af;font-size:0.75rem;margin-top:6px">
-                            ${escapeHtml(String(data.disclaimer || ""))}
-                        </p>
-                    </div>
                 </div>
             </div>
         </div>
