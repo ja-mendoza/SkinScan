@@ -1,16 +1,14 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
-from backend.database import conn, cursor
+from database import conn, cursor
 import io
 import csv
 import base64
-import os
-import requests
+
 import numpy as np
 import tensorflow as tf
 import cv2
-import keras
 
 from PIL import Image
 from tensorflow.keras.applications.resnet import preprocess_input
@@ -23,12 +21,7 @@ app = FastAPI(title="SkinScan API - Binary + Multiclass + GradCAM")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://127.0.0.1:5500",
-        "http://localhost:5500",
-        "http://127.0.0.1:5501",
-        "http://localhost:5501",
-    ],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -39,9 +32,7 @@ app.add_middleware(
 # ============================================================
 
 BASE_DIR = Path(__file__).resolve().parent
-MODEL_PATH = BASE_DIR / "models" / "model.h5"
-
-
+MODEL_PATH = BASE_DIR / "models" / "resnet50.keras"
 DATASET_META = BASE_DIR / "metadata.csv"
 
 IMG_SIZE = 224
@@ -82,7 +73,12 @@ LAST_CONV_LAYER = "conv5_block3_out"
 # ============================================================
 # LOAD MODEL
 # ============================================================
+
+if not MODEL_PATH.exists():
+    raise RuntimeError(f"Model not found: {MODEL_PATH}")
+
 model = tf.keras.models.load_model(MODEL_PATH, compile=False)
+
 # ============================================================
 # PREPROCESS
 # ============================================================
