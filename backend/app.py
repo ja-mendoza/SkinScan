@@ -34,14 +34,13 @@ app.add_middleware(
 # ============================================================
 
 BASE_DIR = Path(__file__).resolve().parent
-MODEL_PATH = BASE_DIR / "models" / "resnet50.keras"
+MODEL_PATH = BASE_DIR / "models" / "resnet50_v2.keras"
 DATASET_META = BASE_DIR / "metadata.csv"
 
 IMG_SIZE = 224
 THRESHOLD = 0.5
 
-# 🔥 PUT YOUR MODEL DOWNLOAD LINK HERE
-MODEL_URL = "https://www.dropbox.com/scl/fi/x3chlk40drznm2ycdfcqm/resnet50.keras?rlkey=zkk49fga1h0d8u5lkoi81mwza&st=68w5z6s7&dl=0"
+MODEL_URL = "https://dl.dropboxusercontent.com/scl/fi/x3chlk40drznm2ycdfcqm/resnet50.keras?rlkey=zkk49fga1h0d8u5lkoi81mwza"
 
 # 11 multiclass labels
 CLASS_NAMES = [
