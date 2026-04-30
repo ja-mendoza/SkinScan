@@ -39,34 +39,8 @@ app.add_middleware(
 # ============================================================
 
 BASE_DIR = Path(__file__).resolve().parent
-MODEL_PATH = BASE_DIR / "models" / "resnet50.keras"
-MODEL_URL = "https://www.dropbox.com/scl/fi/x3chlk40drznm2ycdfcqm/resnet50.keras?rlkey=zkk49fga1h0d8u5lkoi81mwza&st=w5smw2pf&dl=1"
+MODEL_PATH = BASE_DIR / "models" / "model.h5"
 
-def download_model():
-    os.makedirs(MODEL_PATH.parent, exist_ok=True)
-
-    if MODEL_PATH.exists():
-        size = os.path.getsize(MODEL_PATH)
-        if size < 100_000_000:
-            os.remove(MODEL_PATH)
-
-    if not MODEL_PATH.exists():
-        print("Downloading model...")
-        with requests.get(MODEL_URL, stream=True) as r:
-            with open(MODEL_PATH, "wb") as f:
-                for chunk in r.iter_content(8192):
-                    if chunk:
-                        f.write(chunk)
-
-        size = os.path.getsize(MODEL_PATH)
-        print("Final model size:", size)
-
-        if size < 100_000_000:
-            raise RuntimeError("Model download failed")
-
-
-
-from tensorflow.keras.models import load_model
 
 DATASET_META = BASE_DIR / "metadata.csv"
 
@@ -108,9 +82,7 @@ LAST_CONV_LAYER = "conv5_block3_out"
 # ============================================================
 # LOAD MODEL
 # ============================================================
-
-download_model()
-model = keras.models.load_model(MODEL_PATH, compile=False)
+model = tf.keras.models.load_model(MODEL_PATH, compile=False)
 # ============================================================
 # PREPROCESS
 # ============================================================
