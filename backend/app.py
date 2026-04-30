@@ -112,7 +112,16 @@ download_model()
 print("Loading model from:", MODEL_PATH)
 print("File exists:", MODEL_PATH.exists())
 print("File size (MB):", MODEL_PATH.stat().st_size / (1024*1024))
-model = tf.keras.models.load_model(MODEL_PATH, compile=False)
+model = None
+
+def get_model():
+    global model
+    if model is None:
+        print("Loading model...")
+        download_model()
+        model = tf.keras.models.load_model(MODEL_PATH, compile=False)
+        print("Model loaded")
+    return model
 
 # ============================================================
 # PREPROCESS
@@ -135,7 +144,8 @@ def preprocess_image(image_bytes):
 # ============================================================
 
 def predict_outputs(x):
-    preds = model.predict(x, verbose=0)
+    mdl = get_model()
+    preds = mdl.predict(x, verbose=0)
 
     binary_pred = np.array(preds[0]).reshape(-1)[0]
     class_pred = np.array(preds[1]).reshape(-1)
