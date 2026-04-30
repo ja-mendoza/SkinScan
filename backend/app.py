@@ -1,7 +1,7 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
-from database import conn, cursor
+from backend.database import conn, cursor
 import io
 import csv
 import base64
