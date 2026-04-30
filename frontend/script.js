@@ -1,5 +1,5 @@
-const API_URL = "https://skinscan-2ate.onrender.com/predict";
-const HISTORY_URL = "https://skinscan-2ate.onrender.com/history";
+const API_URL = "skinscan-production.up.railway.app/predict";
+const HISTORY_URL = "skinscan-production.up.railway.app/history";
 
 const fileInput = document.getElementById("file-upload");
 const uploadBtn = document.getElementById("upload-btn");
