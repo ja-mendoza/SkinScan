@@ -34,13 +34,14 @@ app.add_middleware(
 # ============================================================
 
 BASE_DIR = Path(__file__).resolve().parent
-MODEL_PATH = BASE_DIR / "models" / "resnet50_compat.h5"
+MODEL_PATH = BASE_DIR / "models" / "resnet50.keras"
 DATASET_META = BASE_DIR / "metadata.csv"
 
 IMG_SIZE = 224
 THRESHOLD = 0.5
 
-MODEL_URL = "https://www.dropbox.com/scl/fi/cg0ydx5lf8t8dm0bu445j/resnet50_compat.h5?rlkey=x1l69a7e4louum47vki95kuxp&st=3uo9sd9v&dl=1"
+# 🔥 PUT YOUR MODEL DOWNLOAD LINK HERE
+MODEL_URL = "https://www.dropbox.com/scl/fi/x3chlk40drznm2ycdfcqm/resnet50.keras?rlkey=zkk49fga1h0d8u5lkoi81mwza&st=68w5z6s7&dl=1"
 
 # 11 multiclass labels
 CLASS_NAMES = [
@@ -77,51 +78,30 @@ CLASS_DESCRIPTIONS = {
 
 def download_model():
     if MODEL_PATH.exists():
-        size = MODEL_PATH.stat().st_size
-        print(f"Existing model size: {size / (1024*1024):.2f} MB")
-        if size > 50 * 1024 * 1024:  # adjust threshold
-            print("Model already valid")
-            return
-        else:
-            print("Corrupted model detected, re-downloading...")
-            MODEL_PATH.unlink()
+        print("Model already exists")
+        return
 
     print("Downloading model...")
     MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-    with requests.get(MODEL_URL, stream=True) as r:
-        if r.status_code != 200:
-            raise RuntimeError("Download failed")
+    response = requests.get(MODEL_URL, stream=True)
+    if response.status_code != 200:
+        raise RuntimeError("Failed to download model")
 
-        with open(MODEL_PATH, "wb") as f:
-            for chunk in r.iter_content(8192):
-                if chunk:
-                    f.write(chunk)
+    with open(MODEL_PATH, "wb") as f:
+        for chunk in response.iter_content(chunk_size=8192):
+            if chunk:
+                f.write(chunk)
 
-    size = MODEL_PATH.stat().st_size
-    print(f"Downloaded model size: {size / (1024*1024):.2f} MB")
-
-    if size < 50 * 1024 * 1024:
-        raise RuntimeError("Download incomplete (file too small)")
+    print("Model downloaded successfully")
 
 # ============================================================
 # LOAD MODEL
 # ============================================================
 
 download_model()
-print("Loading model from:", MODEL_PATH)
-print("File exists:", MODEL_PATH.exists())
-print("File size (MB):", MODEL_PATH.stat().st_size / (1024*1024))
-model = None
 
-def get_model():
-    global model
-    if model is None:
-        print("Loading model...")
-        download_model()
-        model = tf.keras.models.load_model(MODEL_PATH, compile=False)
-        print("Model loaded")
-    return model
+model = tf.keras.models.load_model(MODEL_PATH, compile=False)
 
 # ============================================================
 # PREPROCESS
@@ -144,8 +124,7 @@ def preprocess_image(image_bytes):
 # ============================================================
 
 def predict_outputs(x):
-    mdl = get_model()
-    preds = mdl.predict(x, verbose=0)
+    preds = model.predict(x, verbose=0)
 
     binary_pred = np.array(preds[0]).reshape(-1)[0]
     class_pred = np.array(preds[1]).reshape(-1)
