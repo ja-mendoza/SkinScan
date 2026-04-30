@@ -44,18 +44,25 @@ MODEL_URL = "https://drive.google.com/uc?export=download&id=1UDqAU6D7OBppX4yz8l0
 def download_model():
     os.makedirs(MODEL_PATH.parent, exist_ok=True)
 
-    if not os.path.exists(MODEL_PATH):
+    if not MODEL_PATH.exists() or os.path.getsize(MODEL_PATH) < 1000000:
         print("Downloading model...")
 
-        with requests.get(MODEL_URL, stream=True) as r:
-            with open(MODEL_PATH, "wb") as f:
-                for chunk in r.iter_content(chunk_size=8192):
-                    if chunk:
-                        f.write(chunk)
+        session = requests.Session()
+        response = session.get(MODEL_URL, stream=True)
 
-        print("Model downloaded.")
+        # Handle Google Drive large file warning
+        for key, value in response.cookies.items():
+            if key.startswith('download_warning'):
+                confirm_url = MODEL_URL + "&confirm=" + value
+                response = session.get(confirm_url, stream=True)
+                break
 
-download_model()
+        with open(MODEL_PATH, "wb") as f:
+            for chunk in response.iter_content(8192):
+                if chunk:
+                    f.write(chunk)
+
+        print("Model size:", os.path.getsize(MODEL_PATH))
 
 from tensorflow.keras.models import load_model
 
