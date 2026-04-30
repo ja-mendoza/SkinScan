@@ -41,7 +41,7 @@ IMG_SIZE = 224
 THRESHOLD = 0.5
 
 # 🔥 PUT YOUR MODEL DOWNLOAD LINK HERE
-MODEL_URL = "https://YOUR-DOWNLOAD-LINK/resnet50.keras"
+MODEL_URL = "https://www.dropbox.com/scl/fi/x3chlk40drznm2ycdfcqm/resnet50.keras?rlkey=zkk49fga1h0d8u5lkoi81mwza&st=68w5z6s7&dl=0"
 
 # 11 multiclass labels
 CLASS_NAMES = [
