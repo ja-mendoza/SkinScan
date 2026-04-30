@@ -5,7 +5,8 @@ from database import conn, cursor
 import io
 import csv
 import base64
-
+import os
+import requests
 import numpy as np
 import tensorflow as tf
 import cv2
@@ -38,6 +39,26 @@ app.add_middleware(
 
 BASE_DIR = Path(__file__).resolve().parent
 MODEL_PATH = BASE_DIR / "models" / "resnet50.keras"
+MODEL_URL = "https://drive.google.com/uc?export=download&id=1UDqAU6D7OBppX4yz8l0H_L_ckGaM2k0R"
+
+def download_model():
+    os.makedirs(MODEL_PATH.parent, exist_ok=True)
+
+    if not os.path.exists(MODEL_PATH):
+        print("Downloading model...")
+
+        with requests.get(MODEL_URL, stream=True) as r:
+            with open(MODEL_PATH, "wb") as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+
+        print("Model downloaded.")
+
+download_model()
+
+from tensorflow.keras.models import load_model
+
 DATASET_META = BASE_DIR / "metadata.csv"
 
 IMG_SIZE = 224
