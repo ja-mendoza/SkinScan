@@ -110,11 +110,7 @@ LAST_CONV_LAYER = "conv5_block3_out"
 # ============================================================
 
 download_model()
-model = tf.keras.models.load_model(
-    MODEL_PATH,
-    compile=False,
-    safe_mode=False
-)
+model = keras.models.load_model(MODEL_PATH, compile=False)
 # ============================================================
 # PREPROCESS
 # ============================================================
