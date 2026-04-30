@@ -40,7 +40,7 @@ DATASET_META = BASE_DIR / "metadata.csv"
 IMG_SIZE = 224
 THRESHOLD = 0.5
 
-MODEL_URL = "https://dl.dropboxusercontent.com/scl/fi/x3chlk40drznm2ycdfcqm/resnet50.keras?rlkey=zkk49fga1h0d8u5lkoi81mwza"
+MODEL_URL = "https://www.dropbox.com/scl/fi/so5sp6gfpqkr2bqx77uqn/model.h5?rlkey=4kx928v8aq4xzrqkctegwlc69&st=4mzq44mn&dl=0"
 
 # 11 multiclass labels
 CLASS_NAMES = [
