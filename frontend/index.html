@@ -64,14 +64,12 @@
                             <h3>Upload Skin Image</h3>
                             <p>Upload a clear photo of the skin area you want to analyze</p>
                         </div>
-                        <label for="file-upload">
                             <button class="upload-button" id="upload-btn">
                                 <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                                 </svg>
-                                <span id="upload-btn-text">Choose File</span>
+                                <span type="button" id="upload-btn-text">Choose File</span>
                             </button>
-                        </label>
                         <input type="file" id="file-upload" accept="image/*" style="display: none;">
                         <p class="upload-info">Supported formats: JPG, PNG, HEIC • Max size: 10MB</p>
                     </div>
@@ -95,6 +93,10 @@
                 <!-- Results Section -->
                 <div id="results-section" class="hidden">
                     <!-- Results will be inserted here by JavaScript -->
+                </div>
+                <div class="card" id="history-section">
+                    <h3>Scan History</h3>
+                    <div id="history-list"></div>
                 </div>
             </div>
 

@@ -1,3 +1,10 @@
 {
-    "python-envs.pythonProjects": []
+    "python-envs.pythonProjects": [],
+    "liveServer.settings.multiRootWorkspaceName": "SkinScan",
+
+    "liveServer.settings.ignoreFiles": [
+        "**/*.db",
+        "**/*.sqlite",
+        "**/results.db"
+    ]
 }
