@@ -34,7 +34,7 @@ app.add_middleware(
 # ============================================================
 
 BASE_DIR = Path(__file__).resolve().parent
-MODEL_PATH = BASE_DIR / "models" / "resnet50_v2.keras"
+MODEL_PATH = BASE_DIR / "models" / "resnet50_fixed.h5"
 DATASET_META = BASE_DIR / "metadata.csv"
 
 IMG_SIZE = 224
