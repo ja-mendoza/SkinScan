@@ -111,6 +111,8 @@ LAST_CONV_LAYER = "conv5_block3_out"
 # LOAD MODEL
 # ============================================================
 
+download_model()   # ✅ ADD THIS LINE
+
 if not MODEL_PATH.exists():
     raise RuntimeError(f"Model not found: {MODEL_PATH}")
 
