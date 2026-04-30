@@ -77,29 +77,41 @@ CLASS_DESCRIPTIONS = {
 
 def download_model():
     if MODEL_PATH.exists():
-        print("Model already exists")
-        return
+        size = MODEL_PATH.stat().st_size
+        print(f"Existing model size: {size / (1024*1024):.2f} MB")
+        if size > 50 * 1024 * 1024:  # adjust threshold
+            print("Model already valid")
+            return
+        else:
+            print("Corrupted model detected, re-downloading...")
+            MODEL_PATH.unlink()
 
     print("Downloading model...")
     MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-    response = requests.get(MODEL_URL, stream=True)
-    if response.status_code != 200:
-        raise RuntimeError("Failed to download model")
+    with requests.get(MODEL_URL, stream=True) as r:
+        if r.status_code != 200:
+            raise RuntimeError("Download failed")
 
-    with open(MODEL_PATH, "wb") as f:
-        for chunk in response.iter_content(chunk_size=8192):
-            if chunk:
-                f.write(chunk)
+        with open(MODEL_PATH, "wb") as f:
+            for chunk in r.iter_content(8192):
+                if chunk:
+                    f.write(chunk)
 
-    print("Model downloaded successfully")
+    size = MODEL_PATH.stat().st_size
+    print(f"Downloaded model size: {size / (1024*1024):.2f} MB")
+
+    if size < 50 * 1024 * 1024:
+        raise RuntimeError("Download incomplete (file too small)")
 
 # ============================================================
 # LOAD MODEL
 # ============================================================
 
 download_model()
-
+print("Loading model from:", MODEL_PATH)
+print("File exists:", MODEL_PATH.exists())
+print("File size (MB):", MODEL_PATH.stat().st_size / (1024*1024))
 model = tf.keras.models.load_model(MODEL_PATH, compile=False)
 
 # ============================================================
