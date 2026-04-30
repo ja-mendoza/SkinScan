@@ -34,13 +34,13 @@ app.add_middleware(
 # ============================================================
 
 BASE_DIR = Path(__file__).resolve().parent
-MODEL_PATH = BASE_DIR / "models" / "resnet50_fixed.h5"
+MODEL_PATH = BASE_DIR / "models" / "resnet50_compat.h5"
 DATASET_META = BASE_DIR / "metadata.csv"
 
 IMG_SIZE = 224
 THRESHOLD = 0.5
 
-MODEL_URL = "https://www.dropbox.com/scl/fi/so5sp6gfpqkr2bqx77uqn/model.h5?rlkey=4kx928v8aq4xzrqkctegwlc69&st=4mzq44mn&dl=1"
+MODEL_URL = "https://www.dropbox.com/scl/fi/cg0ydx5lf8t8dm0bu445j/resnet50_compat.h5?rlkey=x1l69a7e4louum47vki95kuxp&st=3uo9sd9v&dl=1"
 
 # 11 multiclass labels
 CLASS_NAMES = [
