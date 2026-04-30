@@ -1,5 +1,5 @@
 const API_URL = "https://skinscan-2ate.onrender.com/predict";
-const HISTORY_URL = "http://127.0.0.1:8000/history";
+const HISTORY_URL = "https://skinscan-2ate.onrender.com/history";
 
 const fileInput = document.getElementById("file-upload");
 const uploadBtn = document.getElementById("upload-btn");
