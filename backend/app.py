@@ -10,6 +10,7 @@ import requests
 import numpy as np
 import tensorflow as tf
 import cv2
+import keras
 
 from PIL import Image
 from tensorflow.keras.applications.resnet import preprocess_input
@@ -109,11 +110,7 @@ LAST_CONV_LAYER = "conv5_block3_out"
 # ============================================================
 
 download_model()
-model = tf.keras.models.load_model(
-    MODEL_PATH,
-    compile=False,
-    safe_mode=False
-)
+model = keras.models.load_model(MODEL_PATH)
 # ============================================================
 # PREPROCESS
 # ============================================================
