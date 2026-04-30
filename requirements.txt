@@ -4,6 +4,5 @@ python-multipart
 numpy==1.24.3
 pillow
 tensorflow==2.13.0
-keras==3.0.5
 opencv-python-headless
 requests
