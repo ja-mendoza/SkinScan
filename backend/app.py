@@ -5,6 +5,8 @@ from database import conn, cursor
 import io
 import csv
 import base64
+import requests
+import os
 
 import numpy as np
 import tensorflow as tf
@@ -21,7 +23,7 @@ app = FastAPI(title="SkinScan API - Binary + Multiclass + GradCAM")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # allow all for deployment
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -38,8 +40,10 @@ DATASET_META = BASE_DIR / "metadata.csv"
 IMG_SIZE = 224
 THRESHOLD = 0.5
 
+# 🔥 PUT YOUR MODEL DOWNLOAD LINK HERE
+MODEL_URL = "https://YOUR-DOWNLOAD-LINK/resnet50.keras"
+
 # 11 multiclass labels
-# CHANGE THIS ORDER to your exact training order
 CLASS_NAMES = [
     "Actinic Keratosis",
     "Basal Cell Carcinoma",
@@ -68,14 +72,34 @@ CLASS_DESCRIPTIONS = {
     "Squamous cell carcinoma, NOS": "Squamous Cell Carcinoma"
 }
 
-LAST_CONV_LAYER = "conv5_block3_out"
+# ============================================================
+# DOWNLOAD MODEL IF NOT EXISTS
+# ============================================================
+
+def download_model():
+    if MODEL_PATH.exists():
+        print("Model already exists")
+        return
+
+    print("Downloading model...")
+    MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+    response = requests.get(MODEL_URL, stream=True)
+    if response.status_code != 200:
+        raise RuntimeError("Failed to download model")
+
+    with open(MODEL_PATH, "wb") as f:
+        for chunk in response.iter_content(chunk_size=8192):
+            if chunk:
+                f.write(chunk)
+
+    print("Model downloaded successfully")
 
 # ============================================================
 # LOAD MODEL
 # ============================================================
 
-if not MODEL_PATH.exists():
-    raise RuntimeError(f"Model not found: {MODEL_PATH}")
+download_model()
 
 model = tf.keras.models.load_model(MODEL_PATH, compile=False)
 
@@ -149,21 +173,14 @@ def top_classes(class_scores, top_k=3):
 # ============================================================
 
 def make_gradcam_heatmap(img_array):
-    """
-    Reliable Grad-CAM for nested ResNet50 multi-output model
-    Uses final conv layer directly.
-    """
-
     base_model = model.get_layer("resnet50")
     last_conv_layer = base_model.get_layer("conv5_block3_out")
 
-    # Feature extractor
     conv_model = tf.keras.models.Model(
         inputs=base_model.input,
         outputs=last_conv_layer.output
     )
 
-    # Build classifier head from conv features
     classifier_input = tf.keras.Input(shape=(7, 7, 2048))
 
     x = classifier_input
@@ -197,11 +214,6 @@ def make_gradcam_heatmap(img_array):
 
 
 def overlay_heatmap(original_img, heatmap):
-    """
-    Properly aligned overlay
-    original_img = RGB 224x224
-    """
-
     heatmap = cv2.resize(heatmap, (224, 224))
     heatmap = np.uint8(255 * heatmap)
 
@@ -216,6 +228,7 @@ def overlay_heatmap(original_img, heatmap):
     )
 
     return base64.b64encode(buffer).decode("utf-8")
+
 # ============================================================
 # OPTIONAL GROUND TRUTH
 # ============================================================
@@ -253,8 +266,6 @@ def health():
     return {
         "status": "ok",
         "model": MODEL_PATH.name,
-        "binary_output": "binary_output",
-        "class_output": "class_output",
         "img_size": IMG_SIZE
     }
 
@@ -291,8 +302,7 @@ async def predict(file: UploadFile = File(...)):
 
         heatmap = make_gradcam_heatmap(x)
         gradcam_img = overlay_heatmap(original_img, heatmap)
-        
-        # Save to database
+
         cursor.execute("""
         INSERT INTO scans (image_name, prediction, lesion_type, confidence)
         VALUES (?, ?, ?, ?)
@@ -302,7 +312,6 @@ async def predict(file: UploadFile = File(...)):
             class_label,
             float(binary_conf)
         ))
-
         conn.commit()
 
         return {
@@ -318,14 +327,13 @@ async def predict(file: UploadFile = File(...)):
             "top_predictions": top_classes(class_scores, 3),
 
             "gradcam": gradcam_img,
-
-            "model": MODEL_PATH.name,
-            "disclaimer": "This AI system is for research purposes only and not a substitute for professional medical diagnosis."
+            "model": MODEL_PATH.name
         }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
+
+
 @app.get("/history")
 def get_history(limit: int = 20):
     cursor.execute("""
