@@ -329,6 +329,16 @@ async def predict(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Empty file")
 
     try:
+        image = Image.open(io.BytesIO(contents)).convert("RGB")
+        image_np = np.array(image)
+        image_cv = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
+
+        # 🔴 SKIN FILTER HERE
+        if not is_skin_image(image_cv):
+            raise HTTPException(
+                status_code=400,
+                detail="Please upload a clear skin image"
+            )
         x, original_img = preprocess_image(contents)
 
         binary_score, class_scores = predict_outputs(x)
