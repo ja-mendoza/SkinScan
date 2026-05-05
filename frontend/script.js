@@ -19,7 +19,12 @@ function init() {
     wireTabs();
     wireAccordion();
     wireUpload();
-    loadHistory(); // ADD THIS
+    
+    fetch("https://skinscan-production.up.railway.app/health")
+        .then(() => console.log("Backend warmed"))
+        .catch(() => {});
+
+    loadHistory();
 }
 
 function wireUpload() {
