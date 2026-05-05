@@ -124,21 +124,35 @@ def preprocess_image(image_bytes):
 # ============================================================
 
 def skin_ratio(image):
-    img = cv2.cvtColor(image, cv2.COLOR_RGB2YCrCb)
+    # Convert to YCrCb
+    ycrcb = cv2.cvtColor(image, cv2.COLOR_RGB2YCrCb)
 
-    lower = np.array([0, 133, 77], dtype=np.uint8)
-    upper = np.array([255, 173, 127], dtype=np.uint8)
+    # Apply Gaussian blur (reduces noise)
+    ycrcb = cv2.GaussianBlur(ycrcb, (5, 5), 0)
 
-    mask = cv2.inRange(img, lower, upper)
+    # Improved thresholds (wider range)
+    lower = np.array([0, 120, 70], dtype=np.uint8)
+    upper = np.array([255, 180, 135], dtype=np.uint8)
 
-    skin_pixels = np.sum(mask > 0)
+    mask = cv2.inRange(ycrcb, lower, upper)
+
+    # Morphological cleanup
+    kernel = np.ones((3, 3), np.uint8)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_DILATE, kernel)
+
+    skin_pixels = np.count_nonzero(mask)
     total_pixels = image.shape[0] * image.shape[1]
 
     return skin_pixels / total_pixels
 
 
-def is_skin_image(image, threshold=0.3):
-    return skin_ratio(image) > threshold
+def is_skin_image(image):
+    ratio = skin_ratio(image)
+
+    print("Skin ratio:", ratio)  # DEBUG
+
+    return ratio > 0.15
 # ============================================================
 # PREDICTION
 # ============================================================
