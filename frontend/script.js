@@ -1,8 +1,8 @@
-// const API_URL = "https://skinscan-production.up.railway.app/predict";
-// const HISTORY_URL = "https://skinscan-production.up.railway.app/history";
+const API_URL = "https://skinscan-production.up.railway.app/predict";
+const HISTORY_URL = "https://skinscan-production.up.railway.app/history";
 
-const API_URL = "http://127.0.0.1:8000/predict";
-const HISTORY_URL = "http://127.0.0.1:8000/history";
+// const API_URL = "http://127.0.0.1:8000/predict";
+// const HISTORY_URL = "http://127.0.0.1:8000/history";
 
 
 const fileInput = document.getElementById("file-upload");
