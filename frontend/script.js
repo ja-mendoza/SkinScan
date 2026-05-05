@@ -1,5 +1,9 @@
-const API_URL = "https://skinscan-production.up.railway.app/predict";
-const HISTORY_URL = "https://skinscan-production.up.railway.app/history";
+// const API_URL = "https://skinscan-production.up.railway.app/predict";
+// const HISTORY_URL = "https://skinscan-production.up.railway.app/history";
+
+const API_URL = "http://127.0.0.1:8000/predict";
+const HISTORY_URL = "http://127.0.0.1:8000/history";
+
 
 const fileInput = document.getElementById("file-upload");
 const uploadBtn = document.getElementById("upload-btn");
@@ -136,9 +140,20 @@ function renderResults(file, data) {
 
             <div class="results-grid">
 
-                <div>
-                    <img src="${imgUrl}" class="results-image" alt="Uploaded Image">
-                    <p style="margin-top:10px;font-weight:600;">Original Image</p>
+                <div >
+                    <div class="image-container">
+                        <img src="${imgUrl}" class="results-image" id="originalImage">
+
+                        <img 
+                            src="data:image/jpeg;base64,${data.gradcam}" 
+                            class="gradcam-overlay"
+                            id="gradcamOverlay"
+                        >
+                    </div>
+
+                    <button class="toggle-btn" onclick="toggleGradcam()">
+                        Show Grad-CAM
+                    </button>
                 </div>
 
                 <div class="results-details">
@@ -198,19 +213,6 @@ function renderResults(file, data) {
 
             <hr style="margin:25px 0;opacity:.15;">
 
-            <h3>Grad-CAM Explanation</h3>
-
-            <div style="margin-top:15px;">
-                <img 
-                    src="data:image/jpeg;base64,${data.gradcam}" 
-                    class="results-image"
-                    alt="GradCAM"
-                >
-                <p style="margin-top:10px;font-size:14px;color:#555;">
-                    Red/yellow areas indicate image regions that influenced the model most.
-                </p>
-            </div>
-
             <hr style="margin:25px 0;opacity:.15;">
 
             <p style="font-size:13px;color:#666;">
@@ -222,6 +224,19 @@ function renderResults(file, data) {
     resultsSection.classList.remove("hidden");
     // ADD THIS (force visibility)
     resultsSection.style.display = "block";
+
+    const orig = document.getElementById("originalImage");
+    const cam  = document.getElementById("gradcamOverlay");
+
+    if (orig && cam) {
+        orig.onload = () => {
+            console.log("ORIGINAL:", orig.naturalWidth, orig.naturalHeight);
+        };
+
+        cam.onload = () => {
+            console.log("GRADCAM:", cam.naturalWidth, cam.naturalHeight);
+        };
+    }
 }
 
 function renderError(msg) {
@@ -316,3 +331,14 @@ function renderHistory(items) {
         `;
     }).join("");
 }
+
+let gradcamVisible = false;
+
+function toggleGradcam() {
+    const overlay = document.getElementById("gradcamOverlay");
+
+    gradcamVisible = !gradcamVisible;
+
+    overlay.style.opacity = gradcamVisible ? 0.8 : 0;
+}
+

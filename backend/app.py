@@ -1,7 +1,7 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
-from backend.database import conn, cursor
+from backend.database import save_scan, get_history
 import io
 import csv
 import base64
@@ -13,6 +13,7 @@ import tensorflow as tf
 import cv2
 
 from PIL import Image
+
 from tensorflow.keras.applications.resnet import preprocess_input
 
 # ============================================================
@@ -40,7 +41,6 @@ DATASET_META = BASE_DIR / "metadata.csv"
 IMG_SIZE = 224
 THRESHOLD = 0.5
 
-# 🔥 PUT YOUR MODEL DOWNLOAD LINK HERE
 MODEL_URL = "https://www.dropbox.com/scl/fi/x3chlk40drznm2ycdfcqm/resnet50.keras?rlkey=zkk49fga1h0d8u5lkoi81mwza&st=68w5z6s7&dl=1"
 
 # 11 multiclass labels
@@ -119,6 +119,26 @@ def preprocess_image(image_bytes):
 
     return x, original
 
+# ============================================================
+# SKIN FILTER (ADD THIS SECTION)
+# ============================================================
+
+def skin_ratio(image):
+    img = cv2.cvtColor(image, cv2.COLOR_RGB2YCrCb)
+
+    lower = np.array([0, 133, 77], dtype=np.uint8)
+    upper = np.array([255, 173, 127], dtype=np.uint8)
+
+    mask = cv2.inRange(img, lower, upper)
+
+    skin_pixels = np.sum(mask > 0)
+    total_pixels = image.shape[0] * image.shape[1]
+
+    return skin_pixels / total_pixels
+
+
+def is_skin_image(image, threshold=0.3):
+    return skin_ratio(image) > threshold
 # ============================================================
 # PREDICTION
 # ============================================================
@@ -214,7 +234,10 @@ def make_gradcam_heatmap(img_array):
 
 
 def overlay_heatmap(original_img, heatmap):
+    # Ensure both are same size
+    original_img = cv2.resize(original_img, (224, 224))
     heatmap = cv2.resize(heatmap, (224, 224))
+
     heatmap = np.uint8(255 * heatmap)
 
     heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
@@ -303,16 +326,13 @@ async def predict(file: UploadFile = File(...)):
         heatmap = make_gradcam_heatmap(x)
         gradcam_img = overlay_heatmap(original_img, heatmap)
 
-        cursor.execute("""
-        INSERT INTO scans (image_name, prediction, lesion_type, confidence)
-        VALUES (?, ?, ?, ?)
-        """, (
+        save_scan(
             file.filename,
+            contents,  # this is important (for hashing)
             binary_label,
             class_label,
             float(binary_conf)
-        ))
-        conn.commit()
+        )
 
         return {
             "prediction": binary_label,
@@ -335,25 +355,6 @@ async def predict(file: UploadFile = File(...)):
 
 
 @app.get("/history")
-def get_history(limit: int = 20):
-    cursor.execute("""
-        SELECT id, image_name, prediction, lesion_type, confidence, created_at
-        FROM scans
-        ORDER BY created_at DESC
-        LIMIT ?
-    """, (limit,))
-
-    rows = cursor.fetchall()
-
-    results = []
-    for r in rows:
-        results.append({
-            "id": r[0],
-            "image_name": r[1],
-            "prediction": r[2],
-            "lesion_type": r[3],
-            "confidence": r[4],
-            "created_at": r[5]
-        })
-
+def history(limit: int = 20):
+    results = get_history(limit)
     return {"history": results}
