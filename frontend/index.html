@@ -75,6 +75,66 @@
                     </div>
                 </div>
 
+                <!-- Camera Capture Section -->
+                <div class="card camera-card">
+
+                    <div class="upload-content">
+
+                        <div class="upload-icon-wrapper">
+                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                        </div>
+
+                        <div class="upload-text">
+                            <h3>Live Camera Capture</h3>
+                            <p>Capture a close-up skin image using your camera</p>
+                        </div>
+
+                        <video
+                            id="camera"
+                            autoplay
+                            playsinline
+                            style="
+                                width:100%;
+                                max-width:420px;
+                                border-radius:16px;
+                                margin-top:20px;
+                                background:#000;
+                                display:none;
+                            "
+                        ></video>
+
+                        <canvas
+                            id="snapshotCanvas"
+                            width="224"
+                            height="224"
+                            style="display:none;"
+                        ></canvas>
+
+                        <div style="margin-top:20px; display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
+
+                            <button class="upload-button" id="startCameraBtn">
+                                Open Camera
+                            </button>
+
+                            <button class="upload-button" id="captureBtn">
+                                Capture & Analyze
+                            </button>
+
+                        </div>
+
+                        <p class="upload-info">
+                            Camera capture only accepts skin or dermoscopic images
+                        </p>
+
+                    </div>
+
+                </div>
+
                 <!-- Example Buttons -->
                 <div class="example-section" id="example-section">
                     <p>Or try these example scans:</p>

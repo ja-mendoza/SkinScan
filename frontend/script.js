@@ -1,8 +1,5 @@
-const API_URL = "https://skinscan-production.up.railway.app/predict";
-const HISTORY_URL = "https://skinscan-production.up.railway.app/history";
-
-// const API_URL = "http://127.0.0.1:8000/predict";
-// const HISTORY_URL = "http://127.0.0.1:8000/history";
+const API_URL = "http://127.0.0.1:8000/predict";
+const HISTORY_URL = "http://127.0.0.1:8000/history";
 
 
 const fileInput = document.getElementById("file-upload");
@@ -13,18 +10,27 @@ const exampleSection = document.getElementById("example-section");
 const loadingSpinner = document.getElementById("loading-spinner");
 const resultsSection = document.getElementById("results-section");
 
+const camera = document.getElementById("camera");
+
+const canvas = document.getElementById("snapshotCanvas");
+
+const startCameraBtn = document.getElementById("startCameraBtn");
+
+const captureBtn = document.getElementById("captureBtn");
+
 init();
 
 function init() {
     wireTabs();
     wireAccordion();
     wireUpload();
-    
-    fetch("https://skinscan-production.up.railway.app/health")
-        .then(() => console.log("Backend warmed"))
-        .catch(() => {});
+
+    // fetch("https://skinscan-production.up.railway.app/health")
+    //     .then(() => console.log("Backend warmed"))
+    //     .catch(() => {});
 
     loadHistory();
+    wireCamera();
 }
 
 function wireUpload() {
@@ -110,6 +116,67 @@ function hideLoading() {
 
     uploadBtn.disabled = false;
     uploadBtnText.textContent = "Choose File";
+}
+function wireCamera() {
+
+    startCameraBtn.addEventListener(
+        "click",
+        startCamera
+    );
+
+    captureBtn.addEventListener(
+        "click",
+        captureAndAnalyze
+    );
+}
+
+async function startCamera() {
+
+    try {
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: "environment"
+            },
+            audio: false
+        });
+
+        camera.style.display = "block";
+
+        camera.srcObject = stream;
+
+    } catch (err) {
+
+        alert("Unable to access camera: " + err);
+
+    }
+}
+
+async function captureAndAnalyze() {
+
+    const ctx = canvas.getContext("2d");
+
+    ctx.drawImage(
+        camera,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    canvas.toBlob(async (blob) => {
+
+        const file = new File(
+            [blob],
+            "camera_capture.jpg",
+            {
+                type: "image/jpeg"
+            }
+        );
+
+        analyzeFile(file);
+
+    }, "image/jpeg");
 }
 
 function renderResults(file, data) {

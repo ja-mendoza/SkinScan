@@ -1,4 +1,5 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException, Query
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 from backend.database import save_scan, get_history
@@ -103,6 +104,13 @@ download_model()
 
 model = tf.keras.models.load_model(MODEL_PATH, compile=False)
 
+FILTER_MODEL_PATH = BASE_DIR / "models" / "skin_filter_model.keras"
+
+filter_model = tf.keras.models.load_model(
+    FILTER_MODEL_PATH,
+    compile=False
+)
+
 # ============================================================
 # PREPROCESS
 # ============================================================
@@ -122,37 +130,19 @@ def preprocess_image(image_bytes):
 # ============================================================
 # SKIN FILTER (ADD THIS SECTION)
 # ============================================================
+def predict_skin_validity(image):
 
-def skin_ratio(image):
-    # Convert to YCrCb
-    ycrcb = cv2.cvtColor(image, cv2.COLOR_RGB2YCrCb)
+    resized = cv2.resize(image, (224, 224))
 
-    # Apply Gaussian blur (reduces noise)
-    ycrcb = cv2.GaussianBlur(ycrcb, (5, 5), 0)
+    x = resized.astype(np.float32)
 
-    # Improved thresholds (wider range)
-    lower = np.array([0, 120, 70], dtype=np.uint8)
-    upper = np.array([255, 180, 135], dtype=np.uint8)
+    x = preprocess_input(x)
 
-    mask = cv2.inRange(ycrcb, lower, upper)
+    x = np.expand_dims(x, axis=0)
 
-    # Morphological cleanup
-    kernel = np.ones((3, 3), np.uint8)
-    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
-    mask = cv2.morphologyEx(mask, cv2.MORPH_DILATE, kernel)
+    score = filter_model.predict(x, verbose=0)[0][0]
 
-    skin_pixels = np.count_nonzero(mask)
-    total_pixels = image.shape[0] * image.shape[1]
-
-    return skin_pixels / total_pixels
-
-
-def is_skin_image(image):
-    ratio = skin_ratio(image)
-
-    print("Skin ratio:", ratio)  # DEBUG
-
-    return ratio > 0.15
+    return float(score)
 # ============================================================
 # PREDICTION
 # ============================================================
@@ -329,17 +319,18 @@ async def predict(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Empty file")
 
     try:
-        image = Image.open(io.BytesIO(contents)).convert("RGB")
-        image_np = np.array(image)
-        image_cv = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
 
-        # 🔴 SKIN FILTER HERE
-        if not is_skin_image(image_cv):
+        x, original_img = preprocess_image(contents)
+        
+        validity_score = predict_skin_validity(original_img)
+
+        print("VALIDITY SCORE:", validity_score)
+
+        if validity_score < 0.8:
             raise HTTPException(
                 status_code=400,
-                detail="Please upload a clear skin image"
+                detail="Please upload a valid skin or dermoscopic image."
             )
-        x, original_img = preprocess_image(contents)
 
         binary_score, class_scores = predict_outputs(x)
 
@@ -373,6 +364,9 @@ async def predict(file: UploadFile = File(...)):
             "gradcam": gradcam_img,
             "model": MODEL_PATH.name
         }
+
+    except HTTPException as e:
+        raise e
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
