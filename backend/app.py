@@ -1,25 +1,18 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException, Query
-from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 from backend.database import save_scan, get_history
 import io
 import csv
-import base64
 import requests
-import os
-
+import cv2
 import numpy as np
 import tensorflow as tf
-import cv2
+import base64
 
 from PIL import Image
 
-from tensorflow.keras.applications.resnet import preprocess_input
-
-# ============================================================
-# FASTAPI INITIALIZATION
-# ============================================================
+from tensorflow.keras.applications.densenet import preprocess_input
 
 app = FastAPI(title="SkinScan API - Binary + Multiclass + GradCAM")
 
@@ -31,52 +24,48 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ============================================================
 # CONFIG
-# ============================================================
-
 BASE_DIR = Path(__file__).resolve().parent
-MODEL_PATH = BASE_DIR / "models" / "resnet50.keras"
+MODEL_PATH = BASE_DIR / "models" / "densenet121.keras"
 DATASET_META = BASE_DIR / "metadata.csv"
 
 IMG_SIZE = 224
 THRESHOLD = 0.5
 
-MODEL_URL = "https://www.dropbox.com/scl/fi/x3chlk40drznm2ycdfcqm/resnet50.keras?rlkey=zkk49fga1h0d8u5lkoi81mwza&st=68w5z6s7&dl=1"
+# MODEL_URL = "https://www.dropbox.com/scl/fi/e05cpuvf17z50p3jfetxw/resnet50.keras?rlkey=n5oc2uedsewuhocje4ay4q48q&st=e8eam6o3&dl=1"
 
-# 11 multiclass labels
 CLASS_NAMES = [
     "Actinic Keratosis",
     "Basal Cell Carcinoma",
-    "Basal cell carcinoma",
     "Dermatofibroma",
     "Melanoma",
-    "Melanoma, NOS",
     "Nevus",
-    "Pigmented benign keratosis",
-    "Solar or actinic keratosis",
-    "Squamous Cell Carcinoma",
-    "Squamous cell carcinoma, NOS"
+    "Pigmented Benign Keratosis",
+    "Solar / Actinic Keratosis",
+    "Squamous Cell Carcinoma"
 ]
 
 CLASS_DESCRIPTIONS = {
-    "Actinic Keratosis": "Actinic Keratosis",
-    "Basal Cell Carcinoma": "Basal Cell Carcinoma",
-    "Basal cell carcinoma": "Basal Cell Carcinoma",
-    "Dermatofibroma": "Dermatofibroma",
-    "Melanoma": "Melanoma",
-    "Melanoma, NOS": "Melanoma",
-    "Nevus": "Nevus",
-    "Pigmented benign keratosis": "Pigmented Benign Keratosis",
-    "Solar or actinic keratosis": "Solar / Actinic Keratosis",
-    "Squamous Cell Carcinoma": "Squamous Cell Carcinoma",
-    "Squamous cell carcinoma, NOS": "Squamous Cell Carcinoma"
+
+    "Actinic Keratosis":
+        "Actinic Keratosis",
+    "Basal Cell Carcinoma":
+        "Basal Cell Carcinoma.",
+    "Dermatofibroma":
+        "Dermatofibroma.",
+    "Melanoma":
+        "Melanoma",
+    "Nevus":
+        "Nevus",
+    "Pigmented Benign Keratosis":
+        "Nevus",
+    "Solar / Actinic Keratosis":
+        " Actinic Keratosis",
+    "Squamous Cell Carcinoma":
+        "Squamous Cell Carcinoma"
 }
 
-# ============================================================
 # DOWNLOAD MODEL IF NOT EXISTS
-# ============================================================
-
 def download_model():
     if MODEL_PATH.exists():
         print("Model already exists")
@@ -96,10 +85,7 @@ def download_model():
 
     print("Model downloaded successfully")
 
-# ============================================================
 # LOAD MODEL
-# ============================================================
-
 download_model()
 
 model = tf.keras.models.load_model(MODEL_PATH, compile=False)
@@ -111,41 +97,47 @@ filter_model = tf.keras.models.load_model(
     compile=False
 )
 
-# ============================================================
 # PREPROCESS
-# ============================================================
-
 def preprocess_image(image_bytes):
+
     img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-    img = img.resize((IMG_SIZE, IMG_SIZE))
-
+    resized = img.resize((IMG_SIZE, IMG_SIZE))
     original = np.array(img, dtype=np.uint8)
-
-    x = original.astype(np.float32)
-    x = np.expand_dims(x, axis=0)
+    x = np.array(resized, dtype=np.float32)
     x = preprocess_input(x)
+    x = np.expand_dims(x, axis=0)
 
     return x, original
 
-# ============================================================
 # SKIN FILTER (ADD THIS SECTION)
-# ============================================================
 def predict_skin_validity(image):
 
     resized = cv2.resize(image, (224, 224))
-
-    x = resized.astype(np.float32)
-
-    x = preprocess_input(x)
-
+    x = resized.astype(np.float32) / 255.0
     x = np.expand_dims(x, axis=0)
-
     score = filter_model.predict(x, verbose=0)[0][0]
 
     return float(score)
-# ============================================================
+
+def has_enough_skin(image):
+
+    hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
+
+    lower = np.array([0, 30, 60], dtype=np.uint8)
+    upper = np.array([25, 180, 255], dtype=np.uint8)
+
+    skin_mask = cv2.inRange(hsv, lower, upper)
+
+    skin_pixels = np.sum(skin_mask > 0)
+    total_pixels = skin_mask.size
+
+    skin_ratio = skin_pixels / total_pixels
+
+    print("SKIN RATIO:", skin_ratio)
+
+    return skin_ratio > 0.25
+
 # PREDICTION
-# ============================================================
 
 def predict_outputs(x):
     preds = model.predict(x, verbose=0)
@@ -191,74 +183,7 @@ def top_classes(class_scores, top_k=3):
         })
 
     return result
-
-# ============================================================
-# GRAD-CAM
-# ============================================================
-
-def make_gradcam_heatmap(img_array):
-    base_model = model.get_layer("resnet50")
-    last_conv_layer = base_model.get_layer("conv5_block3_out")
-
-    conv_model = tf.keras.models.Model(
-        inputs=base_model.input,
-        outputs=last_conv_layer.output
-    )
-
-    classifier_input = tf.keras.Input(shape=(7, 7, 2048))
-
-    x = classifier_input
-    x = model.get_layer("global_average_pooling2d_1")(x)
-    x = model.get_layer("dropout_1")(x)
-    class_output = model.get_layer("class_output")(x)
-
-    classifier_model = tf.keras.models.Model(
-        classifier_input,
-        class_output
-    )
-
-    with tf.GradientTape() as tape:
-        conv_outputs = conv_model(img_array)
-        tape.watch(conv_outputs)
-
-        preds = classifier_model(conv_outputs)
-        pred_index = tf.argmax(preds[0])
-        loss = preds[:, pred_index]
-
-    grads = tape.gradient(loss, conv_outputs)
-
-    pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
-    conv_outputs = conv_outputs[0]
-
-    heatmap = tf.reduce_sum(conv_outputs * pooled_grads, axis=-1)
-    heatmap = np.maximum(heatmap, 0)
-    heatmap = heatmap / (np.max(heatmap) + 1e-8)
-
-    return heatmap
-
-
-def overlay_heatmap(original_img, heatmap):
-    # Ensure both are same size
-    original_img = cv2.resize(original_img, (224, 224))
-    heatmap = cv2.resize(heatmap, (224, 224))
-
-    heatmap = np.uint8(255 * heatmap)
-
-    heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
-    heatmap = cv2.cvtColor(heatmap, cv2.COLOR_BGR2RGB)
-
-    overlay = cv2.addWeighted(original_img, 0.65, heatmap, 0.35, 0)
-
-    _, buffer = cv2.imencode(
-        ".jpg",
-        cv2.cvtColor(overlay, cv2.COLOR_RGB2BGR)
-    )
-
-    return base64.b64encode(buffer).decode("utf-8")
-
-# ============================================================
 # OPTIONAL GROUND TRUTH
-# ============================================================
 
 def get_truth(isic_id: str):
     if not DATASET_META.exists():
@@ -276,10 +201,7 @@ def get_truth(isic_id: str):
                 )
     return None
 
-# ============================================================
 # ROUTES
-# ============================================================
-
 @app.get("/")
 def root():
     return {
@@ -322,6 +244,13 @@ async def predict(file: UploadFile = File(...)):
 
         x, original_img = preprocess_image(contents)
         
+        if not has_enough_skin(original_img):
+
+            raise HTTPException(
+                status_code=400,
+                detail="No significant skin region detected."
+            )
+        
         validity_score = predict_skin_validity(original_img)
 
         print("VALIDITY SCORE:", validity_score)
@@ -337,18 +266,21 @@ async def predict(file: UploadFile = File(...)):
         binary_label, binary_conf, risk = binary_result(binary_score)
 
         idx, class_code, class_label, class_conf = class_result(class_scores)
-
-        heatmap = make_gradcam_heatmap(x)
-        gradcam_img = overlay_heatmap(original_img, heatmap)
+            
+        image_base64 = base64.b64encode(contents).decode("utf-8")
 
         save_scan(
             file.filename,
-            contents,  # this is important (for hashing)
+            contents,
             binary_label,
             class_label,
-            float(binary_conf)
+            float(binary_conf),
+            float(binary_score),
+            risk,
+            float(class_conf),
+            "",
+            image_base64
         )
-
         return {
             "prediction": binary_label,
             "probability_malignant": round(binary_score, 4),
@@ -360,8 +292,8 @@ async def predict(file: UploadFile = File(...)):
             "lesion_confidence": round(class_conf, 4),
 
             "top_predictions": top_classes(class_scores, 3),
-
-            "gradcam": gradcam_img,
+            "image_base64":
+                base64.b64encode(contents).decode("utf-8"),
             "model": MODEL_PATH.name
         }
 
@@ -376,3 +308,19 @@ async def predict(file: UploadFile = File(...)):
 def history(limit: int = 20):
     results = get_history(limit)
     return {"history": results}
+
+@app.get("/layers")
+def layers():
+
+    result = []
+
+    for i, layer in enumerate(model.layers):
+
+        result.append({
+            "index": i,
+            "name": layer.name,
+            "type": str(type(layer))
+        })
+
+    return result
+

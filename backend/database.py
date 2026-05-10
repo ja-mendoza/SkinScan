@@ -16,12 +16,29 @@ cursor = conn.cursor()
 # =========================
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS scans (
+
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+
     image_name TEXT,
+
     image_hash TEXT UNIQUE,
+
     prediction TEXT,
+
     lesion_type TEXT,
+
     confidence REAL,
+
+    probability_malignant REAL,
+
+    risk_level TEXT,
+
+    lesion_confidence REAL,
+
+    gradcam TEXT,
+
+    image_base64 TEXT,
+
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )
 """)
@@ -37,19 +54,64 @@ def get_image_hash(file_bytes: bytes) -> str:
 # =========================
 # INSERT OR UPDATE (UPSERT)
 # =========================
-def save_scan(image_name, file_bytes, prediction, lesion_type, confidence):
+def save_scan(
+    image_name,
+    file_bytes,
+    prediction,
+    lesion_type,
+    confidence,
+    probability_malignant,
+    risk_level,
+    lesion_confidence,
+    gradcam,
+    image_base64
+):
+
     image_hash = get_image_hash(file_bytes)
 
     cursor.execute("""
-    INSERT INTO scans (image_name, image_hash, prediction, lesion_type, confidence)
-    VALUES (?, ?, ?, ?, ?)
+    INSERT INTO scans (
+
+        image_name,
+        image_hash,
+        prediction,
+        lesion_type,
+        confidence,
+        probability_malignant,
+        risk_level,
+        lesion_confidence,
+        gradcam,
+        image_base64
+
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+
     ON CONFLICT(image_hash) DO UPDATE SET
+
         image_name = excluded.image_name,
         prediction = excluded.prediction,
         lesion_type = excluded.lesion_type,
         confidence = excluded.confidence,
+        probability_malignant = excluded.probability_malignant,
+        risk_level = excluded.risk_level,
+        lesion_confidence = excluded.lesion_confidence,
+        gradcam = excluded.gradcam,
+        image_base64 = excluded.image_base64,
         created_at = CURRENT_TIMESTAMP
-    """, (image_name, image_hash, prediction, lesion_type, confidence))
+
+    """, (
+
+        image_name,
+        image_hash,
+        prediction,
+        lesion_type,
+        confidence,
+        probability_malignant,
+        risk_level,
+        lesion_confidence,
+        gradcam,
+        image_base64
+    ))
 
     conn.commit()
 
@@ -103,24 +165,57 @@ if __name__ == "__main__":
     print("\nTotal rows:", len(scans))
     
 def get_history(limit=20):
+
     cursor.execute("""
-        SELECT id, image_name, prediction, lesion_type, confidence, created_at
+        SELECT
+            id,
+            image_name,
+            prediction,
+            lesion_type,
+            confidence,
+            probability_malignant,
+            risk_level,
+            lesion_confidence,
+            gradcam,
+            image_base64,
+            created_at
+
         FROM scans
+
         ORDER BY created_at DESC
+
         LIMIT ?
     """, (limit,))
 
     rows = cursor.fetchall()
 
     results = []
+
     for r in rows:
+
         results.append({
+
             "id": r[0],
+
             "image_name": r[1],
+
             "prediction": r[2],
+
             "lesion_type": r[3],
+
             "confidence": r[4],
-            "created_at": r[5]
+
+            "probability_malignant": r[5],
+
+            "risk_level": r[6],
+
+            "lesion_confidence": r[7],
+
+            "gradcam": r[8],
+
+            "image_base64": r[9],
+
+            "created_at": r[10]
         })
 
     return results
