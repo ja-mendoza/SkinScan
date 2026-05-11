@@ -65,7 +65,6 @@ CLASS_DESCRIPTIONS = {
         "Squamous Cell Carcinoma"
 }
 
-# DOWNLOAD MODEL IF NOT EXISTS
 def download_model():
     if MODEL_PATH.exists():
         print("Model already exists")
@@ -85,7 +84,6 @@ def download_model():
 
     print("Model downloaded successfully")
 
-# LOAD MODEL
 download_model()
 
 model = tf.keras.models.load_model(MODEL_PATH, compile=False)
